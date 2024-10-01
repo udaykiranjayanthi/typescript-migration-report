@@ -16,6 +16,14 @@ export interface Patterns {
   javascriptTests: string;
 }
 
+const asciiArt = `
+  _____                          _      _   
+ |_   _|  _ _ __  ___ ___ __ _ _(_)_ __| |_ 
+   | || || | '_ \\/ -_|_-</ _| '_| | '_ \\  _|
+   |_| \\_, | .__/\\___/__/\\__|_| |_| .__/\\__|
+       |__/|_|                    |_|       
+`;
+
 // Function to validate the configuration
 function validateConfig(config: any): asserts config is Config {
   if (
@@ -32,24 +40,15 @@ function validateConfig(config: any): asserts config is Config {
   }
 }
 
-// Helper function to count files by pattern
-const countFiles = async (pattern: string, config: Config) => {
-  const files = await glob(pattern, {
-    cwd: config.rootDir,
-    ignore: config.exclude,
-  });
-  return files.length;
-};
-
 // Helper function to count total lines in files by pattern
-const countLines = async (pattern: string, config: Config) => {
+const scanLines = async (pattern: string, config: Config) => {
   const files = await glob(pattern, {
     cwd: config.rootDir,
     ignore: config.exclude,
   });
 
   if (files.length === 0) {
-    return 0;
+    return [files.length, 0];
   }
 
   let totalLines = 0;
@@ -59,7 +58,7 @@ const countLines = async (pattern: string, config: Config) => {
     totalLines += fileContent.split("\n").length;
   });
 
-  return totalLines;
+  return [files.length, totalLines];
 };
 
 // Map colors based on percentage
@@ -80,46 +79,38 @@ export async function calculateMetrics(config: Config) {
   //Validating config
   validateConfig(config);
 
-  // Count TypeScript files
-  const tsFilesCount = await countFiles(config.patterns.typescript, config);
-  const tsTestFilesCount = await countFiles(
+  // Count TypeScript files and lines
+  const [tsFilesCount, tsLinesCount] = await scanLines(
+    config.patterns.typescript,
+    config
+  );
+  const [tsTestFilesCount, tsTestLinesCount] = await scanLines(
     config.patterns.typescriptTests,
     config
   );
   const tsCodeFilesCount = tsFilesCount - tsTestFilesCount;
+  const tsCodeLinesCount = tsLinesCount - tsTestLinesCount;
 
-  // Count JavaScript files
-  const jsFilesCount = await countFiles(config.patterns.javascript, config);
-  const jsTestFilesCount = await countFiles(
+  // Count JavaScript files and lines
+  const [jsFilesCount, jsLinesCount] = await scanLines(
+    config.patterns.javascript,
+    config
+  );
+  const [jsTestFilesCount, jsTestLinesCount] = await scanLines(
     config.patterns.javascriptTests,
     config
   );
   const jsCodeFilesCount = jsFilesCount - jsTestFilesCount;
-
-  // Count lines for TypeScript
-  const totalTsLines = await countLines(config.patterns.typescript, config);
-  const totalTsTestLines = await countLines(
-    config.patterns.typescriptTests,
-    config
-  );
-  const totalTsCodeLines = totalTsLines - totalTsTestLines;
-
-  // Count lines for JavaScript
-  const totalJsLines = await countLines(config.patterns.javascript, config);
-  const totalJsTestLines = await countLines(
-    config.patterns.javascriptTests,
-    config
-  );
-  const totalJsCodeLines = totalJsLines - totalJsTestLines;
+  const jsCodeLinesCount = jsLinesCount - jsTestLinesCount;
 
   // Calculate total files
   const totalCodeFilesCount = jsCodeFilesCount + tsCodeFilesCount;
   const totalTestFilesCount = jsTestFilesCount + tsTestFilesCount;
 
   // Calculate total lines
-  const totalLines = totalTsLines + totalJsLines;
-  const totalTestLines = totalTsTestLines + totalJsTestLines;
-  const totalCodeLines = totalTsCodeLines + totalJsCodeLines;
+  const totalLines = tsLinesCount + jsLinesCount;
+  const totalTestLines = tsTestLinesCount + jsTestLinesCount;
+  const totalCodeLines = tsCodeLinesCount + jsCodeLinesCount;
 
   // Check if there are any lines
   if (totalLines === 0) {
@@ -135,11 +126,12 @@ export async function calculateMetrics(config: Config) {
     (tsTestFilesCount * 100) / totalTestFilesCount || 0
   ).toFixed(2);
   const tsTestPercentage = (
-    (totalTsTestLines * 100) / totalTestLines || 0
+    (tsTestLinesCount * 100) / totalTestLines || 0
   ).toFixed(2);
   const tsCodePercentage = (
-    (totalTsCodeLines * 100) / totalCodeLines || 0
+    (tsCodeLinesCount * 100) / totalCodeLines || 0
   ).toFixed(2);
+  const tsPercentage = ((tsLinesCount * 100) / totalLines || 0).toFixed(2);
   // Display results
   // Prepare data for table
 
@@ -156,15 +148,15 @@ export async function calculateMetrics(config: Config) {
       title: { data: "JavaScript", color: ANSI.yellow },
       code_files: { data: jsCodeFilesCount, color: ANSI.default },
       test_files: { data: jsTestFilesCount, color: ANSI.default },
-      code_lines: { data: totalJsCodeLines, color: ANSI.default },
-      test_lines: { data: totalJsTestLines, color: ANSI.default },
+      code_lines: { data: jsCodeLinesCount, color: ANSI.default },
+      test_lines: { data: jsTestLinesCount, color: ANSI.default },
     },
     {
       title: { data: "TypeScript", color: ANSI.cyan },
       code_files: { data: tsCodeFilesCount, color: ANSI.default },
       test_files: { data: tsTestFilesCount, color: ANSI.default },
-      code_lines: { data: totalTsCodeLines, color: ANSI.default },
-      test_lines: { data: totalTsTestLines, color: ANSI.default },
+      code_lines: { data: tsCodeLinesCount, color: ANSI.default },
+      test_lines: { data: tsTestLinesCount, color: ANSI.default },
     },
     {
       title: { data: "All", color: ANSI.default },
@@ -202,5 +194,13 @@ export async function calculateMetrics(config: Config) {
     row.test_lines,
   ]);
 
+  console.log(asciiArt);
+
   printTable(headers, data);
+
+  console.log(
+    `${ANSI.bold}Overall Typescript %: \t${mapColor(
+      tsPercentage
+    )}${tsPercentage} %${ANSI.reset}\n`
+  );
 }
