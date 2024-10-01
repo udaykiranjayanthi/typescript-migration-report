@@ -3,10 +3,18 @@
   "version": "1.0.0",
   "author": "Uday Kiran Jayanthi",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/udaykiranjayanthi/typescript-migration-report"
+  },
   "type": "module",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "/dist",
+    "/bin"
+  ],
   "bin": {
     "typescript-migration-report": "./bin/ts-report.js"
   },
@@ -24,5 +32,24 @@
   },
   "dependencies": {
     "glob": "^11.0.0"
-  }
+  },
+  "keywords": [
+    "typescript",
+    "javascript",
+    "typescript migration",
+    "migration",
+    "code migration",
+    "codebase analysis",
+    "typescript percentage",
+    "javascript percentage",
+    "typescript report",
+    "js to ts",
+    "ts migration",
+    "typescript conversion",
+    "js to typescript",
+    "typescript tools",
+    "code metrics",
+    "code report",
+    "typescript migration report"
+  ]
 }
