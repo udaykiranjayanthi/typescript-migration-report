@@ -3,15 +3,50 @@ import { glob } from "glob";
 import * as path from "path";
 import { ANSI, printTable } from "./table";
 
+export interface Config {
+  patterns: Patterns;
+  rootDir: string;
+  exclude: string[];
+}
+
+export interface Patterns {
+  typescript: string;
+  typescriptTests: string;
+  javascript: string;
+  javascriptTests: string;
+}
+
+// Function to validate the configuration
+function validateConfig(config: any): asserts config is Config {
+  if (
+    !config.rootDir ||
+    !config.patterns ||
+    !config.patterns.typescript ||
+    !config.patterns.typescriptTests ||
+    !config.patterns.javascript ||
+    !config.patterns.javascriptTests ||
+    !config.exclude ||
+    !Array.isArray(config.exclude)
+  ) {
+    throw new Error("Invalid configuration format");
+  }
+}
+
 // Helper function to count files by pattern
-const countFiles = async (pattern: string, targetDir: string) => {
-  const files = await glob(pattern, { cwd: targetDir });
+const countFiles = async (pattern: string, config: Config) => {
+  const files = await glob(pattern, {
+    cwd: config.rootDir,
+    ignore: config.exclude,
+  });
   return files.length;
 };
 
 // Helper function to count total lines in files by pattern
-const countLines = async (pattern: string, targetDir: string) => {
-  const files = await glob(pattern, { cwd: targetDir });
+const countLines = async (pattern: string, config: Config) => {
+  const files = await glob(pattern, {
+    cwd: config.rootDir,
+    ignore: config.exclude,
+  });
 
   if (files.length === 0) {
     return 0;
@@ -19,7 +54,7 @@ const countLines = async (pattern: string, targetDir: string) => {
 
   let totalLines = 0;
   files.forEach((file) => {
-    const filePath = path.join(targetDir, file);
+    const filePath = path.join(config.rootDir, file);
     const fileContent = fs.readFileSync(filePath, "utf-8");
     totalLines += fileContent.split("\n").length;
   });
@@ -27,6 +62,7 @@ const countLines = async (pattern: string, targetDir: string) => {
   return totalLines;
 };
 
+// Map colors based on percentage
 const mapColor = (percent: string) => {
   const value = parseFloat(percent);
 
@@ -40,25 +76,40 @@ const mapColor = (percent: string) => {
 };
 
 // Main logic
-export async function calculateMetrics(targetDir: string) {
+export async function calculateMetrics(config: Config) {
+  //Validating config
+  validateConfig(config);
+
   // Count TypeScript files
-  const tsFilesCount = await countFiles("**/*.{ts,tsx}", targetDir);
-  const tsTestFilesCount = await countFiles("**/*.test.{ts,tsx}", targetDir);
+  const tsFilesCount = await countFiles(config.patterns.typescript, config);
+  const tsTestFilesCount = await countFiles(
+    config.patterns.typescriptTests,
+    config
+  );
   const tsCodeFilesCount = tsFilesCount - tsTestFilesCount;
 
   // Count JavaScript files
-  const jsFilesCount = await countFiles("**/*.{js,jsx}", targetDir);
-  const jsTestFilesCount = await countFiles("**/*.test.{js,jsx}", targetDir);
+  const jsFilesCount = await countFiles(config.patterns.javascript, config);
+  const jsTestFilesCount = await countFiles(
+    config.patterns.javascriptTests,
+    config
+  );
   const jsCodeFilesCount = jsFilesCount - jsTestFilesCount;
 
   // Count lines for TypeScript
-  const totalTsLines = await countLines("**/*.{ts,tsx}", targetDir);
-  const totalTsTestLines = await countLines("**/*.test.{ts,tsx}", targetDir);
+  const totalTsLines = await countLines(config.patterns.typescript, config);
+  const totalTsTestLines = await countLines(
+    config.patterns.typescriptTests,
+    config
+  );
   const totalTsCodeLines = totalTsLines - totalTsTestLines;
 
   // Count lines for JavaScript
-  const totalJsLines = await countLines("**/*.{js,jsx}", targetDir);
-  const totalJsTestLines = await countLines("**/*.test.{js,jsx}", targetDir);
+  const totalJsLines = await countLines(config.patterns.javascript, config);
+  const totalJsTestLines = await countLines(
+    config.patterns.javascriptTests,
+    config
+  );
   const totalJsCodeLines = totalJsLines - totalJsTestLines;
 
   // Calculate total files

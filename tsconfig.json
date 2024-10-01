@@ -11,5 +11,5 @@
     "lib": ["es2017"],
     "esModuleInterop": false,
   },
-  "include": ["src"]
+  "include": ["src", "bin/ts-report.js"]
 }

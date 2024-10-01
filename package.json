@@ -7,8 +7,10 @@
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "typescript-migration-report": "./bin/ts-report.js"
+  },
   "scripts": {
-    "report": "tsx src/index.ts",
     "build": "rollup -c"
   },
   "devDependencies": {
