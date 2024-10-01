@@ -1,6 +1,3 @@
-Here’s a README file for your npm library, **`typescript-migration-report`**:
-
-
 # typescript-migration-report
 
 `typescript-migration-report` is an npm library that helps you calculate the percentage of TypeScript and JavaScript files in your codebase, assisting in tracking progress during migration from JavaScript to TypeScript.
