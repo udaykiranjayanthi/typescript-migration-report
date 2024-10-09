@@ -19,4 +19,4 @@ if (fs.existsSync(configPath)) {
   process.exit(1);
 }
 
-calculateMetrics(config.default).catch((err) => console.error(err));
+calculateMetrics(config.default, currentDir).catch((err) => console.error(err));

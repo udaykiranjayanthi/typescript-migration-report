@@ -51,14 +51,14 @@ const scanLines = async (pattern: string, config: Config) => {
     return [files.length, 0];
   }
 
-  let totalLines = 0;
+  let totalLinesCount = 0;
   files.forEach((file) => {
     const filePath = path.join(config.rootDir, file);
     const fileContent = fs.readFileSync(filePath, "utf-8");
-    totalLines += fileContent.split("\n").length;
+    totalLinesCount += fileContent.split("\n").length;
   });
 
-  return [files.length, totalLines];
+  return [files.length, totalLinesCount];
 };
 
 // Map colors based on percentage
@@ -74,8 +74,19 @@ const mapColor = (percent: string) => {
   }
 };
 
+// Generate report as JSON
+const generateReport = (data: Object, directory: string) => {
+  const filename = "typescript-migration-report.json";
+  const filePath = path.join(directory, filename);
+
+  const jsonData = JSON.stringify(data, null, 2);
+  fs.writeFileSync(filePath, jsonData, "utf8");
+
+  console.log(`Report file saved generated: ${filename}`);
+};
+
 // Main logic
-export async function calculateMetrics(config: Config) {
+export async function calculateMetrics(config: Config, currentDir: string) {
   //Validating config
   validateConfig(config);
 
@@ -104,34 +115,40 @@ export async function calculateMetrics(config: Config) {
   const jsCodeLinesCount = jsLinesCount - jsTestLinesCount;
 
   // Calculate total files
+  const totalFilesCount = tsFilesCount + jsFilesCount;
   const totalCodeFilesCount = jsCodeFilesCount + tsCodeFilesCount;
   const totalTestFilesCount = jsTestFilesCount + tsTestFilesCount;
 
   // Calculate total lines
-  const totalLines = tsLinesCount + jsLinesCount;
-  const totalTestLines = tsTestLinesCount + jsTestLinesCount;
-  const totalCodeLines = tsCodeLinesCount + jsCodeLinesCount;
+  const totalLinesCount = tsLinesCount + jsLinesCount;
+  const totalTestLinesCount = tsTestLinesCount + jsTestLinesCount;
+  const totalCodeLinesCount = tsCodeLinesCount + jsCodeLinesCount;
 
   // Check if there are any lines
-  if (totalLines === 0) {
+  if (totalLinesCount === 0) {
     console.log("No JavaScript or TypeScript code found.");
     return;
   }
 
   // Calculate percentages (keeping in mind your preference for floor division)
-  const tsCodeFilePercentage = (
+  const tsCodeFilesPercentage = (
     (tsCodeFilesCount * 100) / totalCodeFilesCount || 0
   ).toFixed(2);
-  const tsTestFilePercentage = (
+  const tsTestFilesPercentage = (
     (tsTestFilesCount * 100) / totalTestFilesCount || 0
   ).toFixed(2);
-  const tsTestPercentage = (
-    (tsTestLinesCount * 100) / totalTestLines || 0
+  const tsTestLinesPercentage = (
+    (tsTestLinesCount * 100) / totalTestLinesCount || 0
   ).toFixed(2);
-  const tsCodePercentage = (
-    (tsCodeLinesCount * 100) / totalCodeLines || 0
+  const tsCodeLinesPercentage = (
+    (tsCodeLinesCount * 100) / totalCodeLinesCount || 0
   ).toFixed(2);
-  const tsPercentage = ((tsLinesCount * 100) / totalLines || 0).toFixed(2);
+  const tsLinesPercentage = (
+    (tsLinesCount * 100) / totalLinesCount || 0
+  ).toFixed(2);
+  const tsFilesPercentage = (
+    (tsFilesCount * 100) / totalFilesCount || 0
+  ).toFixed(2);
   // Display results
   // Prepare data for table
 
@@ -162,31 +179,32 @@ export async function calculateMetrics(config: Config) {
       title: { data: "All", color: ANSI.default },
       code_files: { data: totalCodeFilesCount, color: ANSI.default },
       test_files: { data: totalTestFilesCount, color: ANSI.default },
-      code_lines: { data: totalCodeLines, color: ANSI.default },
-      test_lines: { data: totalTestLines, color: ANSI.default },
+      code_lines: { data: totalCodeLinesCount, color: ANSI.default },
+      test_lines: { data: totalTestLinesCount, color: ANSI.default },
     },
     {
       title: { data: "TypeScript %", color: ANSI.yellow },
       code_files: {
-        data: `${tsCodeFilePercentage} %`,
-        color: mapColor(tsCodeFilePercentage),
+        data: `${tsCodeFilesPercentage} %`,
+        color: mapColor(tsCodeFilesPercentage),
       },
       test_files: {
-        data: `${tsTestFilePercentage} %`,
-        color: mapColor(tsTestFilePercentage),
+        data: `${tsTestFilesPercentage} %`,
+        color: mapColor(tsTestFilesPercentage),
       },
       code_lines: {
-        data: `${tsCodePercentage} %`,
-        color: mapColor(tsCodePercentage),
+        data: `${tsCodeLinesPercentage} %`,
+        color: mapColor(tsCodeLinesPercentage),
       },
       test_lines: {
-        data: `${tsTestPercentage} %`,
-        color: mapColor(tsTestPercentage),
+        data: `${tsTestLinesPercentage} %`,
+        color: mapColor(tsTestLinesPercentage),
       },
     },
   ];
 
-  const data = tableData.map((row) => [
+  // Print report as table
+  const tableRows = tableData.map((row) => [
     row.title,
     row.code_files,
     row.test_files,
@@ -195,12 +213,49 @@ export async function calculateMetrics(config: Config) {
   ]);
 
   console.log(asciiArt);
-
-  printTable(headers, data);
-
+  printTable(headers, tableRows);
   console.log(
-    `${ANSI.bold}Overall Typescript %: \t${mapColor(
-      tsPercentage
-    )}${tsPercentage} %${ANSI.reset}\n`
+    `${ANSI.bold}Overall Typescript (Lines) %: \t${mapColor(
+      tsLinesPercentage
+    )}${tsLinesPercentage} %${ANSI.reset}`
   );
+  console.log(
+    `${ANSI.bold}Overall Typescript (Files) %: \t${mapColor(
+      tsFilesPercentage
+    )}${tsFilesPercentage} %${ANSI.reset}\n`
+  );
+
+  // Generate report as a JSON
+  const report = {
+    codeFiles: {
+      javascript: jsCodeFilesCount,
+      typescript: tsCodeFilesCount,
+      both: totalCodeFilesCount,
+      typescriptPercentage: tsCodeFilesPercentage,
+    },
+    testFiles: {
+      javascript: jsTestFilesCount,
+      typescript: tsTestFilesCount,
+      both: totalTestFilesCount,
+      typescriptPercentage: tsTestFilesPercentage,
+    },
+    codeLines: {
+      javascript: jsCodeLinesCount,
+      typescript: tsCodeLinesCount,
+      both: totalCodeLinesCount,
+      typescriptPercentage: tsCodeLinesPercentage,
+    },
+    testLines: {
+      javascript: jsTestLinesCount,
+      typescript: tsTestLinesCount,
+      both: totalTestLinesCount,
+      typescriptPercentage: tsTestLinesPercentage,
+    },
+    overall: {
+      typescriptLinesPercentage: tsLinesPercentage,
+      typescriptFilesPercentage: tsFilesPercentage,
+    },
+  };
+
+  generateReport(report, currentDir);
 }
