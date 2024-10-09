@@ -1,6 +1,6 @@
 # typescript-migration-report
 
-`typescript-migration-report` is an npm library that helps you calculate the percentage of TypeScript and JavaScript files in your codebase, assisting in tracking progress during migration from JavaScript to TypeScript.
+An npm library that helps you calculate the percentage of TypeScript and JavaScript files in your codebase, assisting in tracking progress during migration from JavaScript to TypeScript.
 
 ## Installation
 
@@ -38,6 +38,7 @@ module.exports = {
   },
   rootDir: "./",
   exclude: ["node_modules/**", "dist/**"],
+  generateReport: true,
 };
 ```
 
@@ -87,6 +88,9 @@ The `tsreport.config.js` file is where you can configure your patterns and exclu
 - `patterns`: Defines the file patterns for TypeScript and JavaScript files (including tests).
 - `rootDir`: Specifies the root directory of your project.
 - `exclude`: Allows you to exclude specific directories or files, like `node_modules` or `dist`.
+- `generateReport`: Allows you to generate a report file in JSON format, which can be used for CICD pipelines. 
+
+Please refer to [Glob documentation](https://www.npmjs.com/package/glob) to understand more about the file/directory patterns
 
 ### Example Configuration:
 
@@ -99,7 +103,8 @@ module.exports = {
     javascriptTests: "**/*.test.{js,jsx}",
   },
   rootDir: "./",
-  exclude: ["node_modules/**", "dist/**"],
+  exclude: ["node_modules/**", "dist/**", "coverage/**"],
+  generateReport: false,
 };
 ```
 

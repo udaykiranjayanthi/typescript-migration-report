@@ -7,4 +7,5 @@ export default {
   },
   rootDir: "./",
   exclude: ["node_modules/**", "dist/**"],
+  generateReport: true,
 };
