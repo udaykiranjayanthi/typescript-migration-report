@@ -39,6 +39,10 @@ module.exports = {
   rootDir: "./",
   exclude: ["node_modules/**", "dist/**"],
   generateReport: true,
+  logFiles: {
+    typescript: true,
+    javascript: true,
+  },
 };
 ```
 
@@ -59,6 +63,16 @@ npm run ts-report
 The output will look like this in the terminal:
 
 ```
+Scanning typescript files
+⤷ src/table.ts
+⤷ src/metrics.ts
+⤷ src/index.ts
+
+Scanning javascript files
+⤷ tsreport.config.js
+⤷ rollup.config.js
+⤷ bin/ts-report.js
+
   _____                          _      _   
  |_   _|  _ _ __  ___ ___ __ _ _(_)_ __| |_ 
    | || || | '_ \/ -_|_-</ _| '_| | '_ \  _|
@@ -68,15 +82,18 @@ The output will look like this in the terminal:
 +----------------+--------------+--------------+--------------+--------------+
 |                |   Code files |   Test files |   Code lines |   Test lines |
 +----------------+--------------+--------------+--------------+--------------+
-|     JavaScript |            3 |            0 |           54 |            0 |
+|     JavaScript |            3 |            0 |           62 |            0 |
 +----------------+--------------+--------------+--------------+--------------+
-|     TypeScript |            3 |            0 |          283 |            0 |
+|     TypeScript |            3 |            0 |          363 |            0 |
 +----------------+--------------+--------------+--------------+--------------+
-|            All |            6 |            0 |          337 |            0 |
+|            All |            6 |            0 |          425 |            0 |
 +----------------+--------------+--------------+--------------+--------------+
-|   TypeScript % |      50.00 % |       0.00 % |      83.98 % |       0.00 % |
+|   TypeScript % |      50.00 % |       0.00 % |      85.41 % |       0.00 % |
 +----------------+--------------+--------------+--------------+--------------+
-Overall Typescript %:   83.98 %
+Overall Typescript (Lines) %:   85.41 %
+Overall Typescript (Files) %:   50.00 %
+
+Report file generated: typescript-migration-report.json
 ```
 
 This report shows the number of TypeScript and JavaScript files and lines of code in your project, along with the percentage of TypeScript files, helping you track your migration progress.
@@ -89,6 +106,7 @@ The `tsreport.config.js` file is where you can configure your patterns and exclu
 - `rootDir`: Specifies the root directory of your project.
 - `exclude`: Allows you to exclude specific directories or files, like `node_modules` or `dist`.
 - `generateReport`: Allows you to generate a report file in JSON format, which can be used for CICD pipelines. 
+- `logFiles`: Allows logging of scanned files. This helps in debugging or tracking the progress of TypeScript migration. You can enable logging for each file type separately by setting the respective flags to true.
 
 Please refer to [Glob documentation](https://www.npmjs.com/package/glob) to understand more about the file/directory patterns
 
@@ -105,6 +123,12 @@ module.exports = {
   rootDir: "./",
   exclude: ["node_modules/**", "dist/**", "coverage/**"],
   generateReport: false,
+  logFiles: {
+    typescript: true,
+    typescriptTests: false,
+    javascript: true,
+    javascriptTests: false,
+  },
 };
 ```
 

@@ -8,4 +8,10 @@ export default {
   rootDir: "./",
   exclude: ["node_modules/**", "dist/**"],
   generateReport: true,
+  logFiles: {
+    typescript: true,
+    typescriptTests: false,
+    javascript: true,
+    javascriptTests: false,
+  },
 };

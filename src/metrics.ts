@@ -4,17 +4,21 @@ import * as path from "path";
 import { ANSI, printTable } from "./table";
 
 export interface Config {
-  patterns: Patterns;
+  patterns: {
+    typescript: string;
+    typescriptTests: string;
+    javascript: string;
+    javascriptTests: string;
+  };
   rootDir: string;
   exclude: string[];
   generateReport?: boolean;
-}
-
-export interface Patterns {
-  typescript: string;
-  typescriptTests: string;
-  javascript: string;
-  javascriptTests: string;
+  logFiles?: {
+    typescript?: boolean;
+    typescriptTests?: boolean;
+    javascript?: boolean;
+    javascriptTests?: boolean;
+  };
 }
 
 const asciiArt = `
@@ -42,7 +46,11 @@ function validateConfig(config: any): asserts config is Config {
 }
 
 // Helper function to count total lines in files by pattern
-const scanLines = async (pattern: string, config: Config) => {
+const scanLines = async (
+  pattern: string,
+  config: Config,
+  logFile?: boolean
+) => {
   const files = await glob(pattern, {
     cwd: config.rootDir,
     ignore: config.exclude,
@@ -54,6 +62,9 @@ const scanLines = async (pattern: string, config: Config) => {
 
   let totalLinesCount = 0;
   files.forEach((file) => {
+    if (logFile) {
+      console.log(`⤷ ${file}`);
+    }
     const filePath = path.join(config.rootDir, file);
     const fileContent = fs.readFileSync(filePath, "utf-8");
     totalLinesCount += fileContent.split("\n").length;
@@ -94,25 +105,42 @@ export async function calculateMetrics(config: Config, currentDir: string) {
   validateConfig(config);
 
   // Count TypeScript files and lines
+
+  if (config.logFiles?.typescript) {
+    console.log(`\n${ANSI.bold}Scanning typescript files${ANSI.reset}`);
+  }
   const [tsFilesCount, tsLinesCount] = await scanLines(
     config.patterns.typescript,
-    config
+    config,
+    config.logFiles?.typescript
   );
+  if (config.logFiles?.typescriptTests) {
+    console.log(`\n${ANSI.bold}Scanning typescript test files${ANSI.reset}`);
+  }
   const [tsTestFilesCount, tsTestLinesCount] = await scanLines(
     config.patterns.typescriptTests,
-    config
+    config,
+    config.logFiles?.typescriptTests
   );
   const tsCodeFilesCount = tsFilesCount - tsTestFilesCount;
   const tsCodeLinesCount = tsLinesCount - tsTestLinesCount;
 
   // Count JavaScript files and lines
+  if (config.logFiles?.javascript) {
+    console.log(`\n${ANSI.bold}Scanning javascript files${ANSI.reset}`);
+  }
   const [jsFilesCount, jsLinesCount] = await scanLines(
     config.patterns.javascript,
-    config
+    config,
+    config.logFiles?.javascript
   );
+  if (config.logFiles?.javascriptTests) {
+    console.log(`\n${ANSI.bold}Scanning javascript test files${ANSI.reset}`);
+  }
   const [jsTestFilesCount, jsTestLinesCount] = await scanLines(
     config.patterns.javascriptTests,
-    config
+    config,
+    config.logFiles?.javascriptTests
   );
   const jsCodeFilesCount = jsFilesCount - jsTestFilesCount;
   const jsCodeLinesCount = jsLinesCount - jsTestLinesCount;
@@ -212,12 +240,12 @@ export async function calculateMetrics(config: Config, currentDir: string) {
   console.log(
     `${ANSI.bold}Overall Typescript (Lines) %: \t${mapColor(
       tsLinesPercentage
-    )}${formatPercentage(tsLinesPercentage)} %${ANSI.reset}`
+    )}${formatPercentage(tsLinesPercentage)}${ANSI.reset}`
   );
   console.log(
     `${ANSI.bold}Overall Typescript (Files) %: \t${mapColor(
       tsFilesPercentage
-    )}${formatPercentage(tsFilesPercentage)} %${ANSI.reset}\n`
+    )}${formatPercentage(tsFilesPercentage)}${ANSI.reset}\n`
   );
 
   // Generate report as a JSON
